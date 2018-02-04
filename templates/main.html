@@ -1,203 +1,372 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <title>Gorilla Demo</title>
-        <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-        <script src="/static/js/vue.js"></script>
-    </head>
-    <body>
-    <!--<header>
-      <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
-        <a class="navbar-brand" href="#">Dashboard</a>
-        <button class="navbar-toggler d-lg-none" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-          <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Settings</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Profile</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Help</a>
-            </li>
-          </ul>
-          <form class="form-inline mt-2 mt-md-0">
-            <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-          </form>
-        </div>
-      </nav>
-    </header>-->
-
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-sm-3 col-md-3 d-none d-sm-block bg-light sidebar">
-          <div class="flex-column">
-            <label>Telephone #</label>
-            <input type="text"/>
+  <head>
+      <title>Gorilla Demo</title>
+      <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+      <link href="/static/css/main.css" rel="stylesheet">
+      <script src="/static/js/vue.js"></script>
+      <script src="/static/js/jquery-3.3.1.min.js"></script>
+  </head>
+  <body>
+    <div id="mainInstance" class="container-fluid h-100">
+      <div class="row h-100">
+        <div class="col-md-2 d-none d-md-block bg-light sidebar">
+          <div class="sidebar-sticky">
+            <ul class="nav flex-column">
+              <li class="nav-item">
+                <a class="nav-link" href="#" v-on:click="view = 'session'">
+                  <!--<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>-->
+                  Sessions
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" v-on:click="view = 'config'">
+                  <!--<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>-->
+                  Config
+                </a>
+              </li>
+            </ul>
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+              <span>Recent Sessions</span>
+              <a class="d-flex align-items-center text-muted" href="#" v-on:click="view = 'new-session'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              </a>
+            </h6>
+            <ul class="nav flex-column mb-2">
+              <li class="nav-item" v-for="session in recentSessions">
+                <a class="nav-link" href="#" v-on:click="function() { view='session'; adviseSession = session;}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  {{ session.Name }}
+                  <div>
+                    <small class="d-flex justify-content-right align-items-right text-muted">- {{ session.DT }}</small>
+                  </div>
+                </a>
+              </li>
+            </ul>
           </div>
-
         </div>
+        
+        <main-view v-if="view == 'session'" v-on:delete="deleteSession" v-bind:sessions="sessions" v-bind:advise-session="adviseSession"></main-view>
+        <new-session-view v-if="view == 'new-session'" v-on:save="saveSession" v-on:cancel="view = 'session'" v-bind:data-sources="dataSources"></new-session-view>
+        <config-view v-if="view == 'config'" v-bind:data-sources="dataSources"></config-view>
 
-        <main role="main" class="col-sm-8 ml-sm-auto col-md-9 pt-3">
-          <h1>Dashboard</h1>
+      </div>
+    </div>
 
+    <script type="text/x-template" id="mainView">
+      <main role="main" class="col-sm-10 ml-sm-auto col-md-10 pt-3">
+        <div v-if="cacheAdviseSession && currentSession">
+          <h1>{{ currentSession.Name }}
+            <small class="text-muted">- {{ currentSession.DT }}</small>
+          </h1>
           <section class="row text-center placeholders">
-            <div class="col-5 col-sm-3 placeholder">
+            <div class="col-6 col-sm-3 placeholder">
               <img src="data:image/gif;base64,R0lGODlhAQABAIABAAJ12AAAACwAAAAAAQABAAACAkQBADs=" width="200" height="200" class="img-fluid rounded-circle" alt="Generic placeholder thumbnail">
               <h4>Label</h4>
               <div class="text-muted">Something else</div>
             </div>
           </section>
-
-          <h2>Section title</h2>
+        </div>
+        <div>
+          <h2>Previous Sessions</h2>
           <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-striped table-hover">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Header</th>
-                  <th>Header</th>
-                  <th>Header</th>
-                  <th>Header</th>
+                  <th>Session Name</th>
+                  <th>Date</th>
+                  <th>Edit</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>1,001</td>
-                  <td>Lorem</td>
-                  <td>ipsum</td>
-                  <td>dolor</td>
-                  <td>sit</td>
-                </tr>
-                <tr>
-                  <td>1,002</td>
-                  <td>amet</td>
-                  <td>consectetur</td>
-                  <td>adipiscing</td>
-                  <td>elit</td>
-                </tr>
-                <tr>
-                  <td>1,003</td>
-                  <td>Integer</td>
-                  <td>nec</td>
-                  <td>odio</td>
-                  <td>Praesent</td>
-                </tr>
-                <tr>
-                  <td>1,003</td>
-                  <td>libero</td>
-                  <td>Sed</td>
-                  <td>cursus</td>
-                  <td>ante</td>
-                </tr>
-                <tr>
-                  <td>1,004</td>
-                  <td>dapibus</td>
-                  <td>diam</td>
-                  <td>Sed</td>
-                  <td>nisi</td>
-                </tr>
-                <tr>
-                  <td>1,005</td>
-                  <td>Nulla</td>
-                  <td>quis</td>
-                  <td>sem</td>
-                  <td>at</td>
-                </tr>
-                <tr>
-                  <td>1,006</td>
-                  <td>nibh</td>
-                  <td>elementum</td>
-                  <td>imperdiet</td>
-                  <td>Duis</td>
-                </tr>
-                <tr>
-                  <td>1,007</td>
-                  <td>sagittis</td>
-                  <td>ipsum</td>
-                  <td>Praesent</td>
-                  <td>mauris</td>
-                </tr>
-                <tr>
-                  <td>1,008</td>
-                  <td>Fusce</td>
-                  <td>nec</td>
-                  <td>tellus</td>
-                  <td>sed</td>
-                </tr>
-                <tr>
-                  <td>1,009</td>
-                  <td>augue</td>
-                  <td>semper</td>
-                  <td>porta</td>
-                  <td>Mauris</td>
-                </tr>
-                <tr>
-                  <td>1,010</td>
-                  <td>massa</td>
-                  <td>Vestibulum</td>
-                  <td>lacinia</td>
-                  <td>arcu</td>
-                </tr>
-                <tr>
-                  <td>1,011</td>
-                  <td>eget</td>
-                  <td>nulla</td>
-                  <td>Class</td>
-                  <td>aptent</td>
-                </tr>
-                <tr>
-                  <td>1,012</td>
-                  <td>taciti</td>
-                  <td>sociosqu</td>
-                  <td>ad</td>
-                  <td>litora</td>
-                </tr>
-                <tr>
-                  <td>1,013</td>
-                  <td>torquent</td>
-                  <td>per</td>
-                  <td>conubia</td>
-                  <td>nostra</td>
-                </tr>
-                <tr>
-                  <td>1,014</td>
-                  <td>per</td>
-                  <td>inceptos</td>
-                  <td>himenaeos</td>
-                  <td>Curabitur</td>
-                </tr>
-                <tr>
-                  <td>1,015</td>
-                  <td>sodales</td>
-                  <td>ligula</td>
-                  <td>in</td>
-                  <td>libero</td>
+                <tr v-for="session in sessions" v-on:click="currentSession = session">
+                  <td>{{ session.Name }}</td>
+                  <td>{{ session.DT }}</td>
+                  <td>
+                    <a v-on:click="deleteSession(session)">
+                      <svg fill="#000000" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 0h24v24H0z" fill="none"/>
+    <path d="M14.59 8L12 10.59 9.41 8 8 9.41 10.59 12 8 14.59 9.41 16 12 13.41 14.59 16 16 14.59 13.41 12 16 9.41 14.59 8zM12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+</svg>
+                    </a>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </main>
-      </div>
-    </div>
-        <div id="mainInstance">
-            {{ message }}
         </div>
-        <script>
+      </main>
+    </script>
+    <script type="text/x-template" id="configView">
+      <main role="main" class="col-sm-10 ml-sm-auto col-md-10 pt-3">
+          <h1>Config</h1>
+          <div>
+            <h4>ADC Inputs</h4>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Input</th>
+                    <th>#</th>
+                    <th>Single Ended</th>
+                    <th>Differential</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="ds in adcDataSources">
+                    <td>{{ ds.Name }}</td>
+                    <td>{{ ds.Idx }}</td>
+                    <td><input type="radio" v-model="ds.Type" value="single" :name="'ds' + ds.Idx" :disabled="ds.Idx % 2 > 0"/></td>
+                    <td><input type="radio" v-model="ds.Type" value="diff" :name="'ds' + ds.Idx"/></td>
+                    <td>
+                      <a>
+                        <svg fill="#000000" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0 0h24v24H0z" fill="none"/>
+  <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+</svg>
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+      </main>
+    </script>
+    <script type="text/x-template" id="newSessionView">
+      <main role="main" class="col-sm-10 ml-sm-auto col-md-10 pt-3">
+          <h1>New Session</h1>
+          <div class="input-group">
+            <p>
+              <label for="newSessionName">Name:</label>
+              <input v-model="newSessionName" name="newSessionName"/>
+            </p>
+          </div>
+          <h5>Data Sources</h5>
+          <section class="row text-center">
+            <div class="col-5 table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Input</th>
+                    <th>Type</th>
+                    <th>Capture</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="ds in dataSources">
+                    <td>{{ ds.Name }}</td>
+                    <td v-if="ds.Type == 'single'">Single Ended</td>
+                    <td v-if="ds.Type == 'diff'">Differential</td>
+                    <td><input type="checkbox" :value="ds.Name" v-model="capturedDataSources" :disabled="ds.Idx % 2 > 0 && ds.Type == 'diff'"/></td>
+                  </tr>
+                </tbody>
+              </table>    
+            </div>
+          </section>
+          <div class="d-flex justify-content-center">
+            <button type="button" class="btn btn-primary" v-on:click="save">Save</button>
+            <button type="button" class="btn btn-secondary" v-on:click="cancel">Cancel</button>
+          </div>
+      </main>
+    </script>
+
+    <script>
+        Vue.component('main-view', {
+          props: ['sessions', 'adviseSession'],
+          template: '#mainView',
+          data: function() {
+            return {
+              currentSession: undefined,
+            }
+          },
+          computed: {
+            cacheAdviseSession: function() {
+              this.currentSession = this.adviseSession;
+              return this.adviseSession;
+            }
+          },
+          watch: {
+            adviseSession: {
+              handler: function() {
+                console.log("updated", new Date());
+                if ( this.cacheAdviseSession != this.adviseSession ) {
+                  this.cacheAdviseSession = this.adviseSession;
+                  this.currentSession = this.adviseSession;
+                }
+              },
+              deep: true,
+            }
+          },
+          methods: {
+            deleteSession: function(s) {
+              console.log("child deleteSession");
+              this.$emit('delete', s);
+            }
+          }
+        });
+        Vue.component('config-view', {
+          props: ['dataSources'],
+          template: '#configView',
+          computed: {
+            adcDataSources: function() {
+              adcds = Array();
+              for (ds of this.dataSources) {
+                if (ds.Subsystem == 'ADC') {
+                  adcds.push(ds);
+                }
+              }
+              return adcds;
+            }
+          },
+          watch: {
+            dataSources: {
+              handler: function(val) {
+                console.log("dataSources updated");
+                for (ii = 0; ii < 4; ii++ ) {
+                  if ( val[2*ii].Type == 'diff' ) {
+                    val[2*ii].Type = 'diff';
+                    val[2*ii+1].Type = 'diff'
+                  } else {
+                    val[2*ii].Type = 'single';
+                    val[2*ii+1].Type = 'single';
+                  }
+                }
+              },
+              deep: true
+            }
+          }
+        });
+        Vue.component('new-session-view', {
+          props: ['dataSources'],
+          template: '#newSessionView',
+          data: function() {
+            return {
+              newSessionName: "Untitled",
+              capturedDataSources: [],
+            };
+          },
+          methods: {
+            save: function (event) {
+              this.$emit('save', this.newSessionName, this.capturedDataSources);
+            },
+            cancel: function (event) {
+              this.newSessionName = "Test";
+              this.$emit('cancel');
+            }
+          }
+        })
         var app = new Vue({
             el: '#mainInstance',
             data: {
-                message: 'Test'
+                view: "session",
+                message: 'Test',
+                recentSessions: [],
+                sessions: [],
+                adviseSession: undefined,
+                dataSources: [],
+            },
+            methods: {
+              deleteSession: function(session) {
+                console.log("parent delete session");
+                var self = this;
+                $.ajax({
+                  url: '/api/removeSession',
+                  method: 'POST',
+                  contentType: 'application/json; charset=UTF-8',
+                  data: JSON.stringify(session),
+                  success: function() {
+                    for ( ii = 0; ii < self.recentSessions.length; ii++ ) {
+                      if ( session.Name == self.recentSessions[ii].Name && session.DT == self.recentSessions[ii].DT ) {
+                        self.recentSessions.splice(ii, 1);
+                      }
+                    }
+                    for ( ii = 0; ii < self.sessions.length; ii++ ) {
+                      if ( session.Name == self.sessions[ii].Name && session.DT == self.sessions[ii].DT ) {
+                        self.sessions.splice(ii, 1);
+                      }
+                    }
+                  },
+                  error: function(error) {
+                    console.log(error);
+                  }
+                })
+              },
+              saveSession: function(name, sources) {
+                console.log(sources);
+                var self = this;
+                $.ajax({
+                  url: '/api/newSession',
+                  method: 'POST',
+                  contentType: 'application/json; charset=UTF-8',
+                  data: JSON.stringify({ Name: name, CapturedDataSources: sources }),
+                  success: function(data) {
+                    self.view = 'session';
+                    self.recentSessions.unshift(Object.assign({}, data));
+                    self.sessions.unshift(Object.assign({}, data));
+
+                    //self.adviseSession = Object.assign({}, data);
+                    self.$set(self.$data, 'adviseSession', data);
+                    //Vue.set(self.adviseSession, 'DT', data.DT);
+                    
+                  },
+                  error: function(error) {
+                    console.log(error);
+                  }
+                });
+              },
+            },
+            watch: {
+              dataSources: {
+                handler: function(nval, oval) {
+                  console.log("DS UPDATED", new Date(), nval, oval);
+                  for ( ii = 0; ii < nval.length; ii++) {
+                    if ( oval[ii] ) {
+                      console.log("update", ii, nval[ii].Type, oval[ii].Type);
+                    }
+                  }
+                },
+                deep: true
+              }
+            },
+            mounted: function () {
+              var self = this;
+              $.ajax({
+                url: '/api/recentSessions',
+                method: 'GET',
+                success: function (data) {
+                  self.recentSessions = data.Sessions;
+                },
+                error: function (error) {
+                  console.log(error);
+                }
+              });
+              $.ajax({
+                url: '/api/sessionList',
+                method: 'GET',
+                success: function(data) {
+                  self.sessions = Object.assign([], data.Sessions);
+                  if (self.sessions.length > 0) {
+                    self.adviseSession = self.sessions[0];
+                  }
+                },
+                error: function(error) {
+                  console.log(error);
+                }
+              });
+              $.ajax({
+                url: '/api/dataSourceList',
+                method: "GET",
+                success: function(data) {
+                  self.dataSources = data.DataSources;
+                },
+                error: function(error) {
+                  console.log(error);
+                }
+              });
             }
         });
-        </script>
-    </body>
+    </script>
+  </body>
 </html>
