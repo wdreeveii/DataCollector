@@ -24,6 +24,8 @@ func main() {
 	})
 
 	r.HandleFunc("/api/dataSourceList", dataSourceList).Methods("GET")
+	r.HandleFunc("/api/dataSource", dataSourcePlot).Methods("GET")
+	r.HandleFunc("/api/metrics", sessionMetrics).Methods("GET")
 	r.HandleFunc("/api/sessionList", sessionList).Methods("GET")
 	r.HandleFunc("/api/recentSessions", recentSessions).Methods("GET")
 	r.HandleFunc("/api/newSession", newSession).Methods("POST")
@@ -52,6 +54,45 @@ func dataSourceList(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func dataSourcePlot(w http.ResponseWriter, r *http.Request) {
+	var s SessionManager.Session
+	s.Name = r.URL.Query().Get("Name")
+	s.DT = r.URL.Query().Get("DT")
+	s.CapturedDataSources = []string{r.URL.Query().Get("metric")}
+
+	w.Header().Set("Content-Type", "image/svg+xml")
+	err := SessionManager.Plot(w, &s)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+type MetricsResponse struct {
+	Metrics []string
+}
+
+func sessionMetrics(w http.ResponseWriter, r *http.Request) {
+	var s SessionManager.Session
+	s.Name = r.URL.Query().Get("Name")
+	s.DT = r.URL.Query().Get("DT")
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	metrics, err := SessionManager.SessionMetrics(&s)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = enc.Encode(MetricsResponse{Metrics: metrics})
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
 type SessionResponse struct {
 	Sessions []SessionManager.Session
 }
@@ -61,11 +102,15 @@ func sessionList(w http.ResponseWriter, r *http.Request) {
 	enc := json.NewEncoder(w)
 	sessions, err := SessionManager.SessionList(0, 100)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	err = enc.Encode(SessionResponse{Sessions: sessions})
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 }
 

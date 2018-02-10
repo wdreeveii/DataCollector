@@ -42,6 +42,7 @@ var DefaultDataSource = []DataSource{
 }
 
 func init() {
+
 	f, err := os.OpenFile("dataSources.json", os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
 		log.Fatal(err)
