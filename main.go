@@ -25,7 +25,9 @@ func main() {
 
 	r.HandleFunc("/api/dataSourceList", dataSourceList).Methods("GET")
 	r.HandleFunc("/api/dataSource", dataSourcePlot).Methods("GET")
-	r.HandleFunc("/api/metrics", sessionMetrics).Methods("GET")
+	r.HandleFunc("/api/dataSourceStream", dataSourcePlotRT).Methods("GET")
+	r.HandleFunc("/api/sessionDetails", sessionDetails).Methods("GET")
+	r.HandleFunc("/api/sessionCapture", sessionCapture).Methods("POST")
 	r.HandleFunc("/api/sessionList", sessionList).Methods("GET")
 	r.HandleFunc("/api/recentSessions", recentSessions).Methods("GET")
 	r.HandleFunc("/api/newSession", newSession).Methods("POST")
@@ -58,7 +60,7 @@ func dataSourcePlot(w http.ResponseWriter, r *http.Request) {
 	var s SessionManager.Session
 	s.Name = r.URL.Query().Get("Name")
 	s.DT = r.URL.Query().Get("DT")
-	s.CapturedDataSources = []string{r.URL.Query().Get("metric")}
+	s.CapturedDataSources = []DataSourceManager.DSName{DataSourceManager.DSName(r.URL.Query().Get("metric"))}
 
 	w.Header().Set("Content-Type", "image/svg+xml")
 	err := SessionManager.Plot(w, &s)
@@ -68,24 +70,69 @@ func dataSourcePlot(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type MetricsResponse struct {
-	Metrics []string
+func dataSourcePlotRT(w http.ResponseWriter, r *http.Request) {
+	var s SessionManager.Session
+	s.Name = r.URL.Query().Get("Name")
+	s.DT = r.URL.Query().Get("DT")
+	s.CapturedDataSources = []DataSourceManager.DSName{DataSourceManager.DSName(r.URL.Query().Get("metric"))}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Listen to connection close and un-register messageChan
+	notify := w.(http.CloseNotifier).CloseNotify()
+
+	err := SessionManager.PlotStream(w, notify, &s)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
-func sessionMetrics(w http.ResponseWriter, r *http.Request) {
+func sessionDetails(w http.ResponseWriter, r *http.Request) {
 	var s SessionManager.Session
 	s.Name = r.URL.Query().Get("Name")
 	s.DT = r.URL.Query().Get("DT")
 
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
-	metrics, err := SessionManager.SessionMetrics(&s)
+	detail, err := SessionManager.SessionDetails(&s)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = enc.Encode(MetricsResponse{Metrics: metrics})
+	err = enc.Encode(detail)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+type sessionControl struct {
+	SessionManager.Session
+	CaptureEnabled bool `json:"captureEnabled"`
+}
+
+func sessionCapture(w http.ResponseWriter, r *http.Request) {
+	var s sessionControl
+
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&s)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var t SessionManager.Session
+	t.Name = s.Name
+	t.DT = s.DT
+
+	err = SessionManager.SessionControl(&t, s.CaptureEnabled)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -119,11 +166,15 @@ func recentSessions(w http.ResponseWriter, r *http.Request) {
 	enc := json.NewEncoder(w)
 	sessions, err := SessionManager.RecentSessions(10)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	err = enc.Encode(SessionResponse{Sessions: sessions})
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 }
 

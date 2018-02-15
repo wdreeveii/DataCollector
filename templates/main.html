@@ -55,17 +55,18 @@
 
     <script type="text/x-template" id="sessionDetail">
       <div>
-        <section class="row text-center">
-          <div v-for="metric in metrics" class="col-6 col-sm-3">
-            <img :src="'/api/dataSource?Name=' + currentSession.Name + '&DT=' + currentSession.DT + '&metric=' + metric">
+        <section v-for="metric in metrics" class="row text-center">
+          <div>
+            <span v-if="(metricdata[metric])" v-html="metricdata[metric]"></span>
+            <img v-if="!(metricdata[metric])" :src="'/api/dataSource?Name=' + currentSession.Name + '&DT=' + currentSession.DT + '&metric=' + metric + '&reload=' + new Date().getTime()">
             <!--<h4>{{metric}}</h4>
             <div class="text-muted">Something elses{{currentSession.Name}}</div>-->
           </div>
         </section>
         <section class="row">
           <div class="col-10 d-flex justify-content-end">
-            <button type="button" class="btn btn-primary" v-on:click="start">Start Recording</button>
-            <button type="button" class="btn btn-secondary" v-on:click="stop">Stop Recording</button>
+            <button type="button" class="btn btn-primary" v-on:click="start" :disabled="recording">Start Recording</button>
+            <button type="button" class="btn btn-primary" v-on:click="stop" :disabled="!recording">Stop Recording</button>
           </div>
         </section>
       </div>
@@ -193,12 +194,48 @@
           data: function() {
             return {
               metrics: undefined,
+              recording: false,
+              metricdata: [],
+              metricevents: [],
             }
           },
           watch: {
             currentSession: {
               handler: function() {
                 this.getSessionDetails();
+              },
+              deep: true,
+            },
+            recording: {
+              handler: function() {
+                var self = this;
+                if ( this.recording ) {
+                  for (ii = 0; ii < this.metrics.length; ii++) {
+                    var metric = this.metrics[ii];
+                    if ( !this.metricevents[metric] ) {
+                      var evt = new EventSource('/api/dataSourceStream?Name=' + this.currentSession.Name + '&DT=' + this.currentSession.DT + '&metric=' + metric);
+                      evt.onmessage = function(e) {
+                        Vue.set(self.metricdata, metric, e.data);
+                      };
+                      evt.onerror = function(e) {
+                        if (e.readyState == EventSource.CLOSED) {
+                          delete self.metricevents[metric];
+                          delete self.metricdata[metric];
+                        }
+                        console.log(e);
+                      };
+
+                      this.metricevents[metric] = evt;
+                    }
+                  }
+                } else {
+                  for (ii = 0; ii < this.metrics.length; ii++) {
+                    var metric = this.metrics[ii];
+                    this.metricevents[metric].close();
+                    delete this.metricevents[metric];
+                    delete this.metricdata[metric];
+                  }
+                }
               },
               deep: true,
             }
@@ -208,22 +245,45 @@
           },
           methods: {
             start: function(event) {
-
+              this.setCaptureStatus(true);
             },
             stop: function(event) {
-
+              this.setCaptureStatus(false);
+            },
+            setCaptureStatus: function(state) {
+              /*if (!state) {
+                for (ii = 0; ii < this.metricevents.length; ii++) {
+                  this.metricevents[ii].close();
+                  delete this.metricevents[ii];
+                  delete this.metricdata[ii];
+                }
+              }*/
+              var self = this;
+              $.ajax({
+                url: '/api/sessionCapture',
+                method: 'POST',
+                contentType: 'application/json; charset=UTF-8',
+                data: JSON.stringify({ Name: self.currentSession.Name, DT: self.currentSession.DT, captureEnabled: state }),
+                success: function(data) {
+                  self.recording = state
+                },
+                error: function(error) {
+                  console.log(error);
+                }
+              });
             },
             getSessionDetails: function() {
               var self = this;
               $.ajax({
-                url: '/api/metrics',
+                url: '/api/sessionDetails',
                 method: 'GET',
                 data: {
                   Name: this.currentSession.Name,
                   DT: this.currentSession.DT,
                 },
                 success: function (data) {
-                  self.metrics = data.Metrics;
+                  self.metrics = data.CapturedDataSources;
+                  self.recording = data.Recording;
                 },
                 error: function (error) {
                   console.log(error);
